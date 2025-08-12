@@ -259,13 +259,7 @@ export default function App() {
           className="w-full h-full block"
         />
         
-        {/* HUD - Score no canto superior */}
-        {running && (
-          <div className="absolute top-6 left-6 text-white z-10">
-            <div className="text-2xl font-bold mb-1">Score: {score}</div>
-            <div className="text-lg opacity-75">Best: {highScore}</div>
-          </div>
-        )}
+       
         
         {!running && (
           <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
@@ -288,9 +282,6 @@ export default function App() {
                 <>
                   <p className="text-xl text-gray-300 mb-6">Survive the meteor storm!</p>
                   <div className="text-lg text-gray-400 space-y-2">
-                    <p>🎮 Use WASD or Arrow Keys to move</p>
-                    <p>💥 Avoid the red meteors</p>
-                    <p>⚡ Game speeds up as you score!</p>
                   </div>
                 </>
               )}
@@ -301,7 +292,6 @@ export default function App() {
               >
                 {score > 0 ? 'PLAY AGAIN' : 'START GAME'}
               </button>
-              <p className="text-gray-500 text-lg">or press SPACEBAR</p>
             </div>
           </div>
         )}
