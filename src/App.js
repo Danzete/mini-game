@@ -12,13 +12,11 @@ export default function App() {
   const meteors = useRef([]);
   const stars = useRef([]);
 
-  // Configurações - tela cheia
   const canvasWidth = window.innerWidth;
   const canvasHeight = window.innerHeight;
   const playerSpeed = 7;
   const meteorSize = 30;
 
-  // Função para gerar meteoros
   const spawnMeteor = useCallback(() => {
     meteors.current.push({
       x: Math.random() * (canvasWidth - meteorSize),
@@ -29,7 +27,6 @@ export default function App() {
     });
   }, [score, canvasWidth, meteorSize]);
 
-  // Função de colisão
   const isColliding = useCallback((r1, r2) => {
     return !(
       r1.x + r1.w < r2.x ||
@@ -39,7 +36,6 @@ export default function App() {
     );
   }, []);
 
-  // Atualiza posição do jogador
   const updatePlayer = useCallback(() => {
     const p = playerRef.current;
     
@@ -56,21 +52,18 @@ export default function App() {
       p.y += playerSpeed;
     }
 
-    // Limita jogador dentro do canvas
     if (p.x < 0) p.x = 0;
     if (p.x + p.w > canvasWidth) p.x = canvasWidth - p.w;
     if (p.y < 0) p.y = 0;
     if (p.y + p.h > canvasHeight) p.y = canvasHeight - p.h;
   }, [canvasWidth, canvasHeight, playerSpeed]);
 
-  // Desenha nave
   const drawPlayer = useCallback((ctx) => {
     const p = playerRef.current;
     
     ctx.save();
     ctx.translate(p.x + p.w/2, p.y + p.h/2);
     
-    // Glow da nave
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
     gradient.addColorStop(0, 'rgba(59, 130, 246, 0.8)');
     gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
@@ -79,7 +72,6 @@ export default function App() {
     ctx.arc(0, 0, 25, 0, Math.PI * 2);
     ctx.fill();
 
-    // Nave triangular
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
     ctx.moveTo(0, -20);
@@ -88,7 +80,6 @@ export default function App() {
     ctx.closePath();
     ctx.fill();
     
-    // Centro da nave
     ctx.fillStyle = '#60a5fa';
     ctx.beginPath();
     ctx.arc(0, 0, 8, 0, Math.PI * 2);
@@ -97,13 +88,11 @@ export default function App() {
     ctx.restore();
   }, []);
 
-  // Desenha meteoro
   const drawMeteor = useCallback((ctx, meteor) => {
     ctx.save();
     ctx.translate(meteor.x + meteorSize/2, meteor.y + meteorSize/2);
     ctx.rotate(meteor.rotation);
 
-    // Glow do meteoro
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, meteorSize);
     gradient.addColorStop(0, 'rgba(239, 68, 68, 0.6)');
     gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
@@ -112,13 +101,11 @@ export default function App() {
     ctx.arc(0, 0, meteorSize, 0, Math.PI * 2);
     ctx.fill();
 
-    // Meteoro principal
     ctx.fillStyle = '#dc2626';
     ctx.beginPath();
     ctx.arc(0, 0, meteorSize/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Detalhes
     ctx.fillStyle = '#ef4444';
     ctx.beginPath();
     ctx.arc(-5, -3, 4, 0, Math.PI * 2);
@@ -130,19 +117,71 @@ export default function App() {
     ctx.restore();
   }, [meteorSize]);
 
-  // Loop principal do jogo
+  const drawHUD = useCallback((ctx) => {
+    ctx.save();
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(20, 20, 200, 60);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText(`Pontuação: ${score}`, 30, 50);
+    ctx.fillText(`Melhor: ${highScore}`, 30, 75);
+
+    if (!running) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(canvasWidth - 220, canvasHeight - 80, 200, 60);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px Arial';
+      ctx.fillText('WASD/Setas para mover', canvasWidth - 210, canvasHeight - 50);
+      ctx.fillText('ESPAÇO para iniciar', canvasWidth - 210, canvasHeight - 30);
+    }
+    
+    ctx.restore();
+  }, [score, highScore, running, canvasWidth, canvasHeight]);
+
+  const drawGameOver = useCallback((ctx) => {
+    if (!running && score > 0) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 48px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('FIM DE JOGO', canvasWidth/2, canvasHeight/2 - 100);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 32px Arial';
+      ctx.fillText(`Pontuação Final: ${score}`, canvasWidth/2, canvasHeight/2 - 40);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText(`Melhor Pontuação: ${highScore}`, canvasWidth/2, canvasHeight/2);
+      
+      if (score >= highScore && score > 0) {
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('🎉 NOVA MELHOR PONTUAÇÃO! 🎉', canvasWidth/2, canvasHeight/2 + 40);
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText('Pressione ESPAÇO para jogar novamente', canvasWidth/2, canvasHeight/2 + 120);
+      ctx.textAlign = 'start';
+    }
+  }, [running, score, highScore, canvasWidth, canvasHeight]);
+
   const gameLoop = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
     
-    // Fundo gradiente
     const bgGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
     bgGradient.addColorStop(0, '#0f172a');
     bgGradient.addColorStop(1, '#1e293b');
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    // Estrelas
     stars.current.forEach(star => {
       star.y += star.speed;
       if (star.y > canvasHeight) {
@@ -157,16 +196,13 @@ export default function App() {
     });
 
     if (running) {
-      // Atualiza jogador
       updatePlayer();
       drawPlayer(ctx);
 
-      // Cria meteoros
       if (Math.random() < 0.03) {
         spawnMeteor();
       }
 
-      // Atualiza meteoros
       for (let i = meteors.current.length - 1; i >= 0; i--) {
         const meteor = meteors.current[i];
         meteor.y += meteor.speed;
@@ -174,7 +210,6 @@ export default function App() {
 
         drawMeteor(ctx, meteor);
 
-        // Colisão
         const p = playerRef.current;
         if (isColliding(p, { x: meteor.x, y: meteor.y, w: meteorSize, h: meteorSize })) {
           setRunning(false);
@@ -184,21 +219,19 @@ export default function App() {
           break;
         }
 
-        // Remove meteoros que saíram
         if (meteor.y > canvasHeight) {
           meteors.current.splice(i, 1);
           setScore(prev => prev + 1);
         }
       }
-
-      // UI do jogo movida para o HUD externo
-      // (removido do canvas para usar HUD)
     }
 
-    requestRef.current = requestAnimationFrame(gameLoop);
-  }, [running, score, highScore, canvasWidth, canvasHeight, meteorSize, updatePlayer, drawPlayer, spawnMeteor, drawMeteor, isColliding]);
+    drawHUD(ctx);
+    drawGameOver(ctx);
 
-  // Inicia o jogo
+    requestRef.current = requestAnimationFrame(gameLoop);
+  }, [running, score, highScore, canvasWidth, canvasHeight, meteorSize, updatePlayer, drawPlayer, spawnMeteor, drawMeteor, isColliding, drawHUD, drawGameOver]);
+
   const startGame = useCallback(() => {
     meteors.current = [];
     playerRef.current = { x: canvasWidth/2 - 20, y: canvasHeight - 100, w: 40, h: 40 };
@@ -206,7 +239,6 @@ export default function App() {
     setRunning(true);
   }, [canvasWidth, canvasHeight]);
 
-  // Inicializa estrelas
   useEffect(() => {
     stars.current = [];
     for (let i = 0; i < 100; i++) {
@@ -219,7 +251,6 @@ export default function App() {
     }
   }, [canvasWidth, canvasHeight]);
 
-  // Controle das teclas
   useEffect(() => {
     function downHandler(e) {
       keysPressed.current[e.key.toLowerCase()] = true;
@@ -239,7 +270,6 @@ export default function App() {
     };
   }, [running, startGame]);
 
-  // Inicia o loop principal
   useEffect(() => {
     requestRef.current = requestAnimationFrame(gameLoop);
     return () => {
@@ -250,52 +280,12 @@ export default function App() {
   }, [gameLoop]);
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center overflow-hidden">
-      <div className="relative w-full h-full">
-        <canvas
-          ref={canvasRef}
-          width={canvasWidth}
-          height={canvasHeight}
-          className="w-full h-full block"
-        />
-        
-       
-        
-        {!running && (
-          <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
-            <div className="text-center space-y-6">
-              {/* Título sempre visível */}
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-8">
-                🚀 SPACE DODGER
-              </h1>
-              
-              {score > 0 ? (
-                <>
-                  <h2 className="text-4xl font-bold text-red-400">GAME OVER</h2>
-                  <p className="text-3xl text-white">Final Score: {score}</p>
-                  <p className="text-2xl text-yellow-400">Best: {highScore}</p>
-                  {score >= highScore && score > 0 && (
-                    <p className="text-green-400 text-2xl animate-pulse">🎉 NEW HIGH SCORE! 🎉</p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="text-xl text-gray-300 mb-6">Survive the meteor storm!</p>
-                  <div className="text-lg text-gray-400 space-y-2">
-                  </div>
-                </>
-              )}
-              
-              <button
-                onClick={startGame}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-full text-2xl font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
-              >
-                {score > 0 ? 'PLAY AGAIN' : 'START GAME'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={canvasWidth}
+      height={canvasHeight}
+      className="w-full h-full block"
+      style={{ cursor: 'none' }}
+    />
   );
 }
